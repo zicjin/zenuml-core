@@ -23,4 +23,6 @@ export class AsyncMessageStatementVM extends StatementVM {
 
     return isSelf ? SELF_INVOCATION_ASYNC_HEIGHT : MESSAGE_HEIGHT;
   }
+
+  public readonly kind = "async";
 }

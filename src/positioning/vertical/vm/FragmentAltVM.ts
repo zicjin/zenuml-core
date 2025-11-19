@@ -39,4 +39,6 @@ export class FragmentAltVM extends FragmentVM {
 
     return height;
   }
+
+  public readonly kind = "alt";
 }

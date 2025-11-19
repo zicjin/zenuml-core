@@ -10,4 +10,6 @@ export class FragmentRefVM extends FragmentVM {
   protected fragmentBodyHeight(_fragmentOrigin: string): number {
     return REF_FRAGMENT_MIN_HEIGHT;
   }
+
+  public readonly kind = "ref";
 }

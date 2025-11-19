@@ -21,6 +21,117 @@ import {
   StatementKind,
 } from "@/positioning/vertical/StatementTypes";
 import { _STARTER_ } from "@/parser/OrderedParticipants";
+import { BlockVM } from "./vertical/vm/BlockVM";
+import { StatementVM } from "./vertical/vm/StatementVM";
+import { CreationStatementVM } from "./vertical/vm/CreationStatementVM";
+
+/**
+ * Cached measurements for one statement. `top` is relative to the block that
+ * owns the statement and `height` is the total vertical span. `anchors` exposes
+ * important vertical reference points (message line, occurrence top, etc.) so
+ * consumers can align other layers, while `meta` carries debugging telemetry to
+ * cross-check browser results.
+ */
+interface StatementCoordinate {
+  top: number;
+  height: number;
+  kind: StatementKind;
+  anchors?: Partial<Record<StatementAnchor, number>>;
+  meta?: Record<string, number>;
+}
+
+/**
+ * Constructor parameters required to detach layout from the browser. We feed the
+ * parser root context, a text width measuring function (mirroring canvas measureText
+ * in the browser), the theme-driven spacing metrics, and the participant ordering so
+ * async fragment traversals can infer their origin.
+ */
+interface VerticalCoordinatesOptions {
+  rootContext: any;
+  widthProvider: WidthFunc;
+  theme?: ThemeName;
+  originParticipant: string;
+  participantOrder: string[];
+}
+
+/**
+ * Walks the parsed AST and deterministically assigns vertical coordinates to every
+ * statement. The recursion mirrors how the renderer stacks statements inside blocks
+ * and fragments so the resulting heights match what Playwright would capture from
+ * the DOM.
+ */
+export class VerticalCoordinates {
+  private readonly metrics: LayoutMetrics;
+  private readonly statementMap = new Map<StatementKey, StatementCoordinate>();
+  private readonly markdownMeasurer: MarkdownMeasurer;
+  private readonly creationTopByParticipant = new Map<string, number>();
+  private readonly rootBlock: any;
+  private readonly rootOrigin: string;
+  readonly totalHeight: number;
+
+  /**
+   * Build the measurement helpers up-front and immediately walk the root block so
+   * that `totalHeight` and the internal lookup tables are populated for callers.
+   */
+  constructor(options: VerticalCoordinatesOptions) {
+    this.metrics = getLayoutMetrics(options.theme);
+    this.markdownMeasurer = new MarkdownMeasurer(
+      this.metrics,
+      options.widthProvider,
+    );
+    this.rootBlock = options.rootContext?.block?.() ?? options.rootContext;
+    this.rootOrigin = options.originParticipant || _STARTER_;
+
+    const rootVM = new BlockVM(this.rootBlock, {
+      metrics: this.metrics,
+      markdown: this.markdownMeasurer,
+    });
+
+    const start = this.metrics.messageLayerPaddingTop;
+    const layout = rootVM.layout(this.rootOrigin, start);
+    this.totalHeight = layout.endTop + this.metrics.messageLayerPaddingBottom;
+
+    this.populateStatementMap(rootVM, layout.tops, this.rootOrigin);
+  }
+
+  private populateStatementMap(
+    blockVM: BlockVM,
+    tops: number[],
+    origin: string,
+  ) {
+    // We need to access the internal statements of BlockVM to map them back to keys
+    // Since BlockVM doesn't expose them directly in a way we can easily iterate with tops,
+    // we might need to rely on the fact that BlockVM.layout returns tops in order.
+    // However, BlockVM doesn't expose the StatementVMs it created.
+    // We need to modify BlockVM to expose the created StatementVMs or
+    // we need to recreate them here (which is wasteful) or
+    // we need to change BlockVM.layout to return StatementVMs.
+    // Wait, I missed this in the plan. BlockVM.layout returns { tops, endTop }.
+    // It doesn't return the StatementVMs.
+    // I need to modify BlockVM to return the StatementVMs as well.
+    // But I cannot modify BlockVM in this tool call because I am replacing VerticalCoordinates.ts.
+    // I will assume BlockVM is modified to return statementVMs in the layout result.
+    // I will pause this replacement and modify BlockVM first.
+  }
+
+  // ... (rest of the class methods like getStatementTop, etc. remain similar but use statementMap)
+}
+import { WidthFunc } from "@/positioning/Coordinate";
+import { MarkdownMeasurer } from "@/positioning/vertical/MarkdownMeasurer";
+import {
+  getLayoutMetrics,
+  LayoutMetrics,
+  ThemeName,
+} from "@/positioning/vertical/LayoutMetrics";
+import {
+  createStatementKey,
+  StatementKey,
+} from "@/positioning/vertical/StatementIdentifier";
+import {
+  StatementAnchor,
+  StatementKind,
+} from "@/positioning/vertical/StatementTypes";
+import { _STARTER_ } from "@/parser/OrderedParticipants";
 import { getLocalParticipantNames } from "@/positioning/LocalParticipants";
 
 /**
@@ -509,9 +620,7 @@ export class VerticalCoordinates {
       returnHeight: assignment ? this.metrics.returnMessageHeight : 0,
       anchorAdjustment,
       visualAdjustment,
-      assignmentAdjustment: assignment
-        ? assignmentAdjustment
-        : 0,
+      assignmentAdjustment: assignment ? assignmentAdjustment : 0,
       altBranchInset,
     };
     return { top: adjustedTop, height, kind: "creation", anchors, meta };

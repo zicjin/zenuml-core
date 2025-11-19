@@ -20,4 +20,6 @@ export class FragmentLoopVM extends FragmentVM {
     height += this.blockHeight(nestedBlock, fragmentOrigin);
     return height;
   }
+
+  public readonly kind = "loop";
 }

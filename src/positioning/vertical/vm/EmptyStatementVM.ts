@@ -9,4 +9,6 @@ export class EmptyStatementVM extends StatementVM {
   protected heightAfterComment(_origin: string): number {
     return 0;
   }
+
+  public readonly kind = "empty";
 }

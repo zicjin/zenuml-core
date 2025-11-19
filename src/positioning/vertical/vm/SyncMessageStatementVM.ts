@@ -4,7 +4,9 @@ import {
   OCCURRENCE_EMPTY_HEIGHT,
   OCCURRENCE_WITH_CHILDREN_HEIGHT,
   SELF_INVOCATION_SYNC_HEIGHT,
+  STATEMENT_CONTAINER_MARGIN,
 } from "@/positioning/Constants";
+import { getCommentHeight } from "./getCommentHeight";
 import { StatementVM } from "./StatementVM";
 import type { LayoutRuntime } from "./types";
 
@@ -27,14 +29,31 @@ export class SyncMessageStatementVM extends StatementVM {
     const baseHeight = isSelf
       ? SELF_INVOCATION_SYNC_HEIGHT
       : MESSAGE_HEIGHT +
-          (hasNestedBlock
-            ? OCCURRENCE_WITH_CHILDREN_HEIGHT
-            // Total height of sync statement without nested block is somehow
+        (hasNestedBlock
+          ? OCCURRENCE_WITH_CHILDREN_HEIGHT
+          : // Total height of sync statement without nested block is somehow
             // 41px. MESSAGE_HEIGHT + OCCURRENCE_EMPTY_HEIGHT = 40px.
             // This is a workaround.
-            : (OCCURRENCE_EMPTY_HEIGHT + 1));
+            OCCURRENCE_EMPTY_HEIGHT + 1);
 
     const nestedHeight = this.blockHeight(nestedBlock, target);
     return baseHeight + nestedHeight;
   }
+
+  public getAnchors(origin: string): Record<string, number> {
+    const commentHeight = getCommentHeight(this.context, this.runtime.markdown);
+    const messageTop = STATEMENT_CONTAINER_MARGIN + commentHeight;
+    const source = this.message?.From?.() || _STARTER_;
+    const target = this.message?.Owner?.() || origin || _STARTER_;
+    const isSelf = source === target;
+    const messageHeight = isSelf ? SELF_INVOCATION_SYNC_HEIGHT : MESSAGE_HEIGHT;
+    const occurrenceTop = messageTop + messageHeight;
+
+    return {
+      message: messageTop,
+      occurrence: occurrenceTop,
+    };
+  }
+
+  public readonly kind = "sync";
 }

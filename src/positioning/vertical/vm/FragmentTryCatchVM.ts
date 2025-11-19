@@ -36,4 +36,6 @@ export class FragmentTryCatchVM extends FragmentVM {
 
     return height;
   }
+
+  public readonly kind = "tcf";
 }

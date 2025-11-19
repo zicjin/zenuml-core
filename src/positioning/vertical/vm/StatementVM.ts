@@ -23,4 +23,10 @@ export abstract class StatementVM extends NodeVM {
   }
 
   protected abstract heightAfterComment(origin: string): number;
+
+  public getAnchors(origin: string): Record<string, number> {
+    return {};
+  }
+
+  public abstract readonly kind: string;
 }
