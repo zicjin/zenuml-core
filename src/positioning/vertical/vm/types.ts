@@ -6,7 +6,10 @@ export interface LayoutRuntime {
   markdown: MarkdownMeasurer;
 }
 
+import { StatementVM } from "./StatementVM";
+
 export type BlockLayout = {
   tops: number[];
   endTop: number;
+  statements: StatementVM[];
 };

@@ -2,6 +2,7 @@ import { STATEMENT_CONTAINER_MARGIN } from "@/positioning/Constants";
 import { NodeVM } from "./NodeVM";
 import type { BlockLayout, LayoutRuntime } from "./types";
 import { createStatementVM } from "./createStatementVM";
+import { StatementVM } from "./StatementVM";
 
 export class BlockVM extends NodeVM {
   private readonly statements: any[];
@@ -13,6 +14,7 @@ export class BlockVM extends NodeVM {
 
   public layout(origin: string, startTop: number): BlockLayout {
     const tops: number[] = [];
+    const statements: any[] = [];
     let currentTop = startTop;
 
     this.statements.forEach((statement: any) => {
@@ -21,9 +23,10 @@ export class BlockVM extends NodeVM {
       const statementHeight = statementVM.height(origin);
       currentTop += statementHeight;
       tops.push(statementTop);
+      statements.push(statementVM);
     });
     currentTop += STATEMENT_CONTAINER_MARGIN;
-    return { tops, endTop: currentTop };
+    return { tops, endTop: currentTop, statements };
   }
 
   public advance(origin: string, startTop: number): number {
@@ -32,5 +35,18 @@ export class BlockVM extends NodeVM {
 
   public height(origin: string): number {
     return this.layout(origin, 0).endTop;
+  }
+
+  public traverse(
+    origin: string,
+    startTop: number,
+    visitor: (statement: StatementVM, top: number) => void,
+  ): void {
+    let currentTop = startTop;
+    this.statements.forEach((statement: any) => {
+      const statementVM = createStatementVM(statement, this.runtime);
+      statementVM.traverse(origin, currentTop, visitor);
+      currentTop += statementVM.height(origin);
+    });
   }
 }

@@ -4,6 +4,7 @@ import {
 } from "@/positioning/Constants";
 import { getCommentHeight } from "./getCommentHeight";
 import { StatementVM } from "./StatementVM";
+import { BlockVM } from "./BlockVM";
 import type { LayoutRuntime } from "./types";
 
 export class CreationStatementVM extends StatementVM {
@@ -35,4 +36,20 @@ export class CreationStatementVM extends StatementVM {
   }
 
   public readonly kind = "creation";
+
+  protected traverseNested(
+    origin: string,
+    startTop: number,
+    visitor: (statement: StatementVM, top: number) => void,
+  ): void {
+    const commentHeight = getCommentHeight(this.context, this.runtime.markdown);
+    const messageTop = STATEMENT_CONTAINER_MARGIN + commentHeight;
+    const occurrenceTop = messageTop + CREATION_MESSAGE_HEIGHT;
+    const target = this.creation?.Owner?.() || origin;
+    const nestedBlock = this.creation?.braceBlock?.()?.block?.();
+    if (nestedBlock) {
+      const blockVM = new BlockVM(nestedBlock, this.runtime);
+      blockVM.traverse(target, startTop + occurrenceTop, visitor);
+    }
+  }
 }

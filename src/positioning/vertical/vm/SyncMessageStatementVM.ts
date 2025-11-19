@@ -8,6 +8,7 @@ import {
 } from "@/positioning/Constants";
 import { getCommentHeight } from "./getCommentHeight";
 import { StatementVM } from "./StatementVM";
+import { BlockVM } from "./BlockVM";
 import type { LayoutRuntime } from "./types";
 
 export class SyncMessageStatementVM extends StatementVM {
@@ -56,4 +57,20 @@ export class SyncMessageStatementVM extends StatementVM {
   }
 
   public readonly kind = "sync";
+
+  protected traverseNested(
+    origin: string,
+    startTop: number,
+    visitor: (statement: StatementVM, top: number) => void,
+  ): void {
+    const source = this.message?.From?.() || _STARTER_;
+    const target = this.message?.Owner?.() || origin || _STARTER_;
+    const isSelf = source === target;
+    const messageHeight = isSelf ? SELF_INVOCATION_SYNC_HEIGHT : MESSAGE_HEIGHT;
+    const nestedBlock = this.message?.braceBlock?.()?.block?.();
+    if (nestedBlock) {
+      const blockVM = new BlockVM(nestedBlock, this.runtime);
+      blockVM.traverse(origin, startTop + messageHeight, visitor);
+    }
+  }
 }

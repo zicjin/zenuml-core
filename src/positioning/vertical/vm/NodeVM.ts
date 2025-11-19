@@ -3,7 +3,7 @@ import type { LayoutRuntime } from "./types";
 
 export abstract class NodeVM {
   constructor(
-    protected readonly context: any,
+    public readonly context: any,
     protected readonly runtime: LayoutRuntime,
   ) {}
 

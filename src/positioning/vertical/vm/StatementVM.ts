@@ -29,4 +29,21 @@ export abstract class StatementVM extends NodeVM {
   }
 
   public abstract readonly kind: string;
+
+  public traverse(
+    origin: string,
+    startTop: number,
+    visitor: (statement: StatementVM, top: number) => void,
+  ): void {
+    visitor(this, startTop);
+    this.traverseNested(origin, startTop, visitor);
+  }
+
+  protected traverseNested(
+    origin: string,
+    startTop: number,
+    visitor: (statement: StatementVM, top: number) => void,
+  ): void {
+    // Default no-op
+  }
 }
