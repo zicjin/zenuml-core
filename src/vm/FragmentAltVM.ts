@@ -53,15 +53,18 @@ export class FragmentAltVM extends FragmentVM {
     let conditionedBranches = 0;
     let totalConditionHeight = 0;
     branches.forEach((branch, index) => {
+      // Each non-first segment has mt-2 in the CSS
+      if (index > 0) {
+        cursor += this.metrics.fragmentBranchGap; // mt-2 (8px)
+        // border-t is included in the browser's bounding box measurement,
+        // so we don't add it here - it's already part of the height
+      }
       if (branch.conditionHeight) {
         cursor += branch.conditionHeight;
         conditionedBranches += 1;
         totalConditionHeight += branch.conditionHeight;
       }
       cursor = this.layoutNestedBlock(branch.block, leftParticipant, cursor);
-      if (index < branches.length - 1) {
-        cursor += this.metrics.fragmentBranchGap;
-      }
     });
 
     const result = this.finalizeFragment(top, cursor, {

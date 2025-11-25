@@ -6,22 +6,14 @@ import { StatementKind } from "@/positioning/vertical/StatementTypes";
 export class BlockVM extends NodeVM {
   private readonly statements: any[];
 
+  // REMOVED: Magic offsets replaced with explicit spacing in FragmentVM classes
   private static readonly cursorOffsets: Partial<
     Record<StatementKind, number>
-  > = {
-    loop: 1,
-    par: -1,
-    opt: -3,
-  };
+  > = {};
 
   private static readonly heightOffsets: Partial<
     Record<StatementKind, number>
-  > = {
-    alt: 2,
-    loop: -5,
-    par: 3,
-    opt: 2,
-  };
+  > = {};
 
   constructor(context: any, runtime: LayoutRuntime) {
     super(context, runtime);
