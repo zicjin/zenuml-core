@@ -1,6 +1,5 @@
 import { marked } from "marked";
 import { LayoutMetrics } from "./LayoutMetrics";
-import { TextType, WidthFunc } from "@/positioning/Coordinate";
 
 type GenericToken = ReturnType<typeof marked.lexer>[number];
 type ListItemToken = GenericToken & {
@@ -8,10 +7,6 @@ type ListItemToken = GenericToken & {
   tokens?: GenericToken[];
   items?: ListItemToken[];
 };
-
-const STRIP_FORMATTING = /[*_`~]/g;
-
-const sanitize = (value: string) => value.replace(STRIP_FORMATTING, "").trim();
 
 const defaultTokensOptions = {
   gfm: true,
@@ -25,12 +20,8 @@ const defaultTokensOptions = {
  * same font metrics the browser would use.
  */
 export class MarkdownMeasurer {
-  constructor(
-    private readonly metrics: LayoutMetrics,
-    private readonly widthProvider: WidthFunc,
-  ) {}
+  constructor(private readonly metrics: LayoutMetrics) {}
 
-  /** Returns the total height for a markdown snippet, including block spacing. */
   measure(text: string | undefined | null): number {
     if (!text || !text.trim()) {
       return 0;
@@ -49,7 +40,6 @@ export class MarkdownMeasurer {
     return total;
   }
 
-  /** Matches each markdown token to the corresponding vertical footprint. */
   private measureToken(token: GenericToken): number {
     switch (token.type) {
       case "heading":
@@ -69,19 +59,10 @@ export class MarkdownMeasurer {
     }
   }
 
-  /** Splits the paragraph into lines and simulates wrapping using `widthProvider`. */
+  /** Splits the paragraph into lines; wrapping is ignored for server-side determinism. */
   private measureParagraph(text: string): number {
     const lines = text.split(/\n+/);
-    return lines.reduce((acc, line) => {
-      const sanitized = sanitize(line);
-      if (!sanitized) {
-        return acc + this.metrics.commentLineHeight;
-      }
-      const width = this.widthProvider(sanitized, TextType.MessageContent);
-      const maxWidth = this.metrics.commentMaxWidth;
-      const lineCount = Math.max(1, Math.ceil(width / maxWidth));
-      return acc + lineCount * this.metrics.commentLineHeight;
-    }, 0);
+    return lines.reduce((acc) => acc + this.metrics.commentLineHeight, 0);
   }
 
   /** Recursively measures bullet/numbered lists. */

@@ -1,0 +1,45 @@
+import { StatementCoordinate } from "@/positioning/vertical/StatementCoordinate";
+import { StatementVM } from "./StatementVM";
+import type { LayoutRuntime } from "./types";
+
+export class AsyncMessageStatementVM extends StatementVM {
+  readonly kind = "async" as const;
+
+  constructor(
+    statement: any,
+    private readonly asyncMessage: any,
+    runtime: LayoutRuntime,
+  ) {
+    super(statement, runtime);
+  }
+
+  public measure(top: number, origin: string): StatementCoordinate {
+    const asyncContext = this.asyncMessage;
+    const commentHeight = this.measureComment(asyncContext);
+    const messageTop = top + commentHeight;
+    const source =
+      asyncContext?.From?.() ||
+      asyncContext?.ProvidedFrom?.() ||
+      asyncContext?.Origin?.() ||
+      origin;
+    const target =
+      asyncContext?.Owner?.() ||
+      asyncContext?.to?.()?.getFormattedText?.() ||
+      source;
+    const isSelf = source === target;
+    const messageHeight = isSelf
+      ? this.metrics.selfAsyncHeight
+      : this.metrics.asyncMessageHeight;
+    const anchors: StatementCoordinate["anchors"] = { message: messageTop };
+    if (commentHeight) {
+      anchors.comment = top;
+    }
+    const height = commentHeight + messageHeight;
+    const meta: StatementCoordinate["meta"] = {
+      commentHeight,
+      messageHeight,
+      isSelf: isSelf ? 1 : 0,
+    };
+    return { top, height, kind: this.kind, anchors, meta };
+  }
+}

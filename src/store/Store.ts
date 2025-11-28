@@ -2,11 +2,24 @@ import { atom } from "jotai";
 import { atomWithLocalStorage, atomWithFunctionValue } from "./utils.ts";
 import { RootContext, Participants } from "@/parser";
 import { AllMessages } from "@/parser/MessageCollector";
-import { _STARTER_ } from "@/parser/OrderedParticipants";
+import { _STARTER_, OrderedParticipants } from "@/parser/OrderedParticipants";
 import WidthProviderOnBrowser from "../positioning/WidthProviderFunc";
 import { Coordinates } from "../positioning/Coordinates";
 import { VerticalCoordinates } from "@/positioning/VerticalCoordinates";
 import { CodeRange } from "../parser/CodeRange";
+
+type VerticalMode = "server" | "browser";
+
+const resolveVerticalMode = (): VerticalMode => {
+  if (typeof window !== "undefined") {
+    const mode = (window as any).__ZEN_VERTICAL_MODE;
+    if (mode === "browser") return "browser";
+    if (mode === "server") return "server";
+  }
+  return import.meta.env.VITE_VERTICAL_MODE === "browser"
+    ? "browser"
+    : "server";
+};
 
 /*
  * RenderMode
@@ -38,14 +51,18 @@ export const coordinatesAtom = atom(
   (get) => new Coordinates(get(rootContextAtom), WidthProviderOnBrowser),
 );
 
+export const verticalModeAtom = atom<VerticalMode>(resolveVerticalMode());
+
 export const verticalCoordinatesAtom = atom((get) => {
+  if (get(verticalModeAtom) === "browser") {
+    return null;
+  }
   const rootContext = get(rootContextAtom);
   if (!rootContext) {
     return null;
   }
-  const coordinates = get(coordinatesAtom);
   const theme = get(themeAtom);
-  const participantOrder = coordinates.orderedParticipantNames();
+  const participantOrder = OrderedParticipants(rootContext).map((p) => p.name);
   const ownableMessages = AllMessages(rootContext);
   const originParticipant =
     ownableMessages.length === 0
@@ -53,7 +70,6 @@ export const verticalCoordinatesAtom = atom((get) => {
       : ownableMessages[0].from || _STARTER_;
   return new VerticalCoordinates({
     rootContext,
-    widthProvider: WidthProviderOnBrowser,
     theme,
     originParticipant,
     participantOrder,

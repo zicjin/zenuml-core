@@ -18,7 +18,6 @@ describe("VerticalCoordinates", () => {
     const participantOrder = coordinates.orderedParticipantNames();
     const vertical = new VerticalCoordinates({
       rootContext: context,
-      widthProvider: stubWidthProvider,
       originParticipant: _STARTER_,
       participantOrder,
     });
@@ -35,7 +34,6 @@ describe("VerticalCoordinates", () => {
     const participantOrder = coordinates.orderedParticipantNames();
     const vertical = new VerticalCoordinates({
       rootContext: context,
-      widthProvider: stubWidthProvider,
       originParticipant: _STARTER_,
       participantOrder,
     });
@@ -52,7 +50,8 @@ describe("VerticalCoordinates", () => {
     const firstBlockStart =
       headerBottom + metrics.fragmentBodyGap + metrics.fragmentConditionHeight;
     const firstStatementTop = firstBlockStart + metrics.statementMarginTop;
-    const firstExpected = firstStatementTop;
+    const branchInset = metrics.creationAltBranchInset;
+    const firstExpected = firstStatementTop + branchInset;
 
     const creationHeight =
       metrics.creationMessageHeight + metrics.occurrenceMinHeight;
@@ -63,7 +62,7 @@ describe("VerticalCoordinates", () => {
       metrics.fragmentBranchGap +
       metrics.fragmentElseLabelHeight;
     const secondStatementTop = afterElseCondition + metrics.statementMarginTop;
-    const secondExpected = secondStatementTop;
+    const secondExpected = secondStatementTop + branchInset;
 
     expect(creations[0].anchors?.message).toBe(firstExpected);
     expect(creations[1].anchors?.message).toBe(secondExpected);
@@ -76,6 +75,86 @@ describe("VerticalCoordinates", () => {
     );
   });
 
+  it("applies try/catch offsets to creation anchors", () => {
+    const code = `try { new A } catch { }`;
+    const context = RootContext(code);
+    const coordinates = new Coordinates(context, stubWidthProvider);
+    const participantOrder = coordinates.orderedParticipantNames();
+    const vertical = new VerticalCoordinates({
+      rootContext: context,
+      originParticipant: _STARTER_,
+      participantOrder,
+    });
+    const metrics = getLayoutMetrics(undefined);
+    const tryBlock = context
+      ?.block()
+      ?.stat?.()?.[0]
+      ?.tcf?.()
+      ?.tryBlock?.()
+      ?.braceBlock?.()
+      ?.block?.();
+    const tryStatements = tryBlock?.stat?.() || [];
+    const firstCreation = tryStatements[0];
+    const anchors = vertical.getStatementAnchors(firstCreation);
+    expect(anchors?.message).toBeDefined();
+    const creationTop = vertical.getCreationTop("A");
+    expect(creationTop).toBeDefined();
+
+    // The anchor already absorbs the try-segment inset, so creationTop should
+    // match it exactly rather than adding the offset again.
+    expect(creationTop).toBe(anchors?.message);
+
+    const expectedAnchor =
+      metrics.messageLayerPaddingTop + // root padding
+      metrics.statementMarginTop + // margin before the TCF fragment
+      metrics.fragmentHeaderHeight + // "try" header
+      metrics.statementMarginTop + // margin before the creation inside try
+      metrics.creationTcfSegmentOffset; // inset applied within try block
+    expect(anchors?.message).toBe(expectedAnchor);
+  });
+
+  it("applies additional inset to subsequent creations inside PAR", () => {
+    const code = `par { new A new B }`;
+    const context = RootContext(code);
+    const coordinates = new Coordinates(context, stubWidthProvider);
+    const participantOrder = coordinates.orderedParticipantNames();
+    const vertical = new VerticalCoordinates({
+      rootContext: context,
+      originParticipant: _STARTER_,
+      participantOrder,
+    });
+    const metrics = getLayoutMetrics(undefined);
+    const parBlock = context
+      ?.block()
+      ?.stat?.()?.[0]
+      ?.par?.()
+      ?.braceBlock?.()
+      ?.block?.();
+    const parStatements = parBlock?.stat?.() || [];
+    const firstCreation = parStatements[0];
+    const secondCreation = parStatements[1];
+    const firstAnchors = vertical.getStatementAnchors(firstCreation);
+    const secondAnchors = vertical.getStatementAnchors(secondCreation);
+    expect(firstAnchors?.message).toBeDefined();
+    expect(secondAnchors?.message).toBeDefined();
+    const firstDiff =
+      (vertical.getCreationTop("A") || 0) - (firstAnchors?.message || 0);
+    const secondDiff =
+      (vertical.getCreationTop("B") || 0) - (secondAnchors?.message || 0);
+    expect(firstDiff).toBe(0);
+    expect(secondDiff).toBe(0);
+
+    // The sibling inset should already be baked into the second anchor.
+    const creationHeight =
+      metrics.creationMessageHeight + metrics.occurrenceMinHeight;
+    const expectedSecondAnchor =
+      (firstAnchors?.message || 0) +
+      creationHeight +
+      metrics.statementGap +
+      metrics.creationParSiblingOffset;
+    expect(secondAnchors?.message).toBe(expectedSecondAnchor);
+  });
+
   it("keeps inline messages flush with following creation assignments", () => {
     const code = `A.message\na = new A()`;
     const context = RootContext(code);
@@ -83,7 +162,6 @@ describe("VerticalCoordinates", () => {
     const participantOrder = coordinates.orderedParticipantNames();
     const vertical = new VerticalCoordinates({
       rootContext: context,
-      widthProvider: stubWidthProvider,
       originParticipant: _STARTER_,
       participantOrder,
     });

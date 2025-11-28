@@ -1,8 +1,3 @@
-/**
- * Pixel perfect spacing contract shared between the server-side measurement pass
- * and the browser renderer. Every constant mirrors a concrete CSS dimension so
- * that we can reason about layout without querying the DOM.
- */
 export interface LayoutMetrics {
   messageLayerPaddingTop: number;
   messageLayerPaddingBottom: number;
@@ -26,6 +21,11 @@ export interface LayoutMetrics {
   selfAsyncHeight: number;
   creationMessageHeight: number;
   returnMessageHeight: number;
+  /**
+   * Height of a self-return (source === target) which renders a different DOM
+   * structure (icon + text) and is a few pixels taller than a normal return.
+   */
+  returnSelfMessageHeight: number;
   occurrenceMinHeight: number;
   fragmentHeaderHeight: number;
   fragmentConditionHeight: number;
@@ -44,6 +44,7 @@ export interface LayoutMetrics {
   fragmentElseLabelHeight: number;
   creationAssignmentOffset: number;
   creationAltBranchInset: number;
+  creationParSiblingOffset: number;
 }
 
 const SPACING_UNIT = 4; // Tailwind spacing scale unit (1 => 0.25rem => 4px)
@@ -70,6 +71,7 @@ export const DEFAULT_LAYOUT_METRICS: LayoutMetrics = {
   selfAsyncHeight: 54,
   creationMessageHeight: 38,
   returnMessageHeight: 16,
+  returnSelfMessageHeight: 20,
   occurrenceMinHeight: tw(6),
   fragmentHeaderHeight: rem(1.5) + 1,
   fragmentConditionHeight: rem(1.5),
@@ -79,15 +81,16 @@ export const DEFAULT_LAYOUT_METRICS: LayoutMetrics = {
   dividerHeight: tw(10),
   occurrenceContentInset: 1,
   creationOccurrenceContentInset: 18,
-  returnStatementMarginBottom: 0,
+  returnStatementMarginBottom: 2,
   fragmentOccurrenceMinHeight: 10,
-  tcfSegmentHeaderHeight: 18,
-  creationAltBranchOffset: 13,
-  creationTcfSegmentOffset: 5,
+  tcfSegmentHeaderHeight: 16,
+  creationAltBranchOffset: 11,
+  creationTcfSegmentOffset: 1,
   creationSectionOffset: 14,
   fragmentElseLabelHeight: 13,
   creationAssignmentOffset: 15,
   creationAltBranchInset: 1,
+  creationParSiblingOffset: 1,
 };
 
 export type ThemeName = string | null | undefined;

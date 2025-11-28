@@ -1,5 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { initVerticalDebug, writeVerticalDebug } from "./utils/verticalDebug";
+import {
+  captureDebugScreenshot,
+  exportComponentBreakdown,
+} from "./utils/debugScreenshot";
 
 test.describe("Rendering", () => {
   test("alt-1", async ({ page }) => {
@@ -18,6 +22,74 @@ test.describe("Rendering", () => {
     } finally {
       if (didEnableDebug) {
         await writeVerticalDebug(page, "alt-1-debug");
+        await captureDebugScreenshot(page, "alt-1");
+        await exportComponentBreakdown(page, "alt-1");
+      }
+    }
+  });
+
+  test("alt-2", async ({ page }) => {
+    const didEnableDebug = await initVerticalDebug(page);
+    await page.goto("http://127.0.0.1:8080/cy/alt-2.html");
+
+    await expect(page.locator(".privacy>span>svg")).toBeVisible({
+      timeout: 5000,
+    });
+
+    try {
+      await expect(page).toHaveScreenshot("alt-2.png", {
+        threshold: 0.02,
+        fullPage: true,
+      });
+    } finally {
+      if (didEnableDebug) {
+        await writeVerticalDebug(page, "alt-2-debug");
+        await captureDebugScreenshot(page, "alt-2");
+        await exportComponentBreakdown(page, "alt-2");
+      }
+    }
+  });
+
+  test("alt-3", async ({ page }) => {
+    const didEnableDebug = await initVerticalDebug(page);
+    await page.goto("http://127.0.0.1:8080/cy/alt-3.html");
+
+    await expect(page.locator(".privacy>span>svg")).toBeVisible({
+      timeout: 5000,
+    });
+
+    try {
+      await expect(page).toHaveScreenshot("alt-3.png", {
+        threshold: 0.02,
+        fullPage: true,
+      });
+    } finally {
+      if (didEnableDebug) {
+        await writeVerticalDebug(page, "alt-3-debug");
+        await captureDebugScreenshot(page, "alt-3");
+        await exportComponentBreakdown(page, "alt-3");
+      }
+    }
+  });
+
+  test("alt-4", async ({ page }) => {
+    const didEnableDebug = await initVerticalDebug(page);
+    await page.goto("http://127.0.0.1:8080/cy/alt-4.html");
+
+    await expect(page.locator(".privacy>span>svg")).toBeVisible({
+      timeout: 5000,
+    });
+
+    try {
+      await expect(page).toHaveScreenshot("alt-4.png", {
+        threshold: 0.02,
+        fullPage: true,
+      });
+    } finally {
+      if (didEnableDebug) {
+        await writeVerticalDebug(page, "alt-4-debug");
+        await captureDebugScreenshot(page, "alt-4");
+        await exportComponentBreakdown(page, "alt-4");
       }
     }
   });
